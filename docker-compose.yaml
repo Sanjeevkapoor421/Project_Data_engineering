@@ -1,0 +1,105 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    restart: always
+
+  airflow-init:
+    image: apache/airflow:2.8.2
+    depends_on:
+      - postgres
+    environment: &airflow-env
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__FERNET_KEY: wH_oXyx0psTibbVsh6hOdZY5V06OVHWXeUzQY9ABWuQ=
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      _PIP_ADDITIONAL_REQUIREMENTS: kaggle pandas python-dotenv snowflake-connector-python apache-airflow-providers-snowflake dbt-core dbt-snowflake
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./python_scripts:/opt/airflow/python_scripts
+      - ./plugins:/opt/airflow/plugins
+      - ./credentials:/opt/airflow/credentials
+      - ./credentials/kaggle.json:/home/airflow/.config/kaggle/kaggle.json:ro
+      - ./output_kaggle_files:/opt/airflow/output_kaggle_files
+      - ./entrypoint.sh:/opt/airflow/entrypoint.sh:ro
+    entrypoint: ["/opt/airflow/entrypoint.sh"]
+    command: []
+
+  airflow-webserver: 
+    image: apache/airflow:2.8.2
+    depends_on:
+      - postgres
+      - airflow-init
+    environment: &airflow-env
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__FERNET_KEY: wH_oXyx0psTibbVsh6hOdZY5V06OVHWXeUzQY9ABWuQ=
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      _PIP_ADDITIONAL_REQUIREMENTS: kaggle pandas python-dotenv snowflake-connector-python apache-airflow-providers-snowflake dbt-core dbt-snowflake
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./python_scripts:/opt/airflow/python_scripts
+      - ./plugins:/opt/airflow/plugins
+      - ./entrypoint.sh:/opt/airflow/entrypoint.sh
+      - ./credentials:/opt/airflow/credentials
+      - ./credentials/kaggle.json:/home/airflow/.config/kaggle/kaggle.json:ro
+      - ./output_kaggle_files:/opt/airflow/output_kaggle_files
+    ports:
+      - "8080:8080" 
+    command: "webserver"
+    restart: always
+
+  airflow-scheduler:
+    image: apache/airflow:2.8.2
+    depends_on:
+      - postgres
+      - airflow-webserver
+      - airflow-init
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__FERNET_KEY: wH_oXyx0psTibbVsh6hOdZY5V06OVHWXeUzQY9ABWuQ=
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      _PIP_ADDITIONAL_REQUIREMENTS: kaggle pandas python-dotenv snowflake-connector-python apache-airflow-providers-snowflake dbt-core dbt-snowflake
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./python_scripts:/opt/airflow/python_scripts
+      - ./plugins:/opt/airflow/plugins
+      - ./credentials:/opt/airflow/credentials
+      - ./entrypoint.sh:/opt/airflow/entrypoint.sh
+      - ./credentials/kaggle.json:/home/airflow/.config/kaggle/kaggle.json:ro
+      - ./output_kaggle_files:/opt/airflow/output_kaggle_files
+     
+    command: "scheduler"
+
+    restart: always
+
+  pipeline-job:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+        - ./dags:/opt/airflow/dags
+        - ./logs:/opt/airflow/logs
+        - ./python_scripts:/opt/airflow/python_scripts
+        - ./plugins:/opt/airflow/plugins
+        - ./credentials:/opt/airflow/credentials
+        - ./output_kaggle_files:/opt/airflow/output_kaggle_files
+        - ./dags/sanjeev_dbt/profiles.yml:/home/airflow/.dbt/profiles.yml
+    working_dir: /app
+    environment:
+      KAGGLE_CONFIG_DIR: /opt/airflow/credentials  
+      DBT_PROFILES_DIR: /home/airflow/.dbt  
+
+volumes:
+  postgres-db-volume:
