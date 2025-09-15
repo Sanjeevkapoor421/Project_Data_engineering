@@ -5,7 +5,10 @@ This Project is developed for my university assignment purpose
 python3 -m vene myenv
 source myenv/bin/activate
 
-# Step2: Start the docker containers
+# Step32: install dbt deps for offline dbt runs
+dbt deps
+
+# Step3: Start the docker containers
 Docker compose up -d
 
 # Access the local Host
