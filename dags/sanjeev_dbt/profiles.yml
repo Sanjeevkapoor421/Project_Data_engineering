@@ -1,0 +1,13 @@
+sanjeev_dbt:
+  outputs:
+    dev:
+      account: GPPCQLT-KA20101
+      database: dbt_db
+      password: Sanjeevairflow@4
+      role: dbt_role
+      schema: staging
+      threads: 10
+      type: snowflake
+      user: sanjeev_airflow
+      warehouse: dbt_wh
+  target: dev

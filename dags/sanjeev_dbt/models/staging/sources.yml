@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: staging
+    database: dbt_db
+    schema: staging
+    tables:
+      - name: yelp_raw_data

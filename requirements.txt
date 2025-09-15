@@ -1,0 +1,8 @@
+kaggle
+snowflake-connector-python
+pandas
+apache-airflow-providers-snowflake
+python-dotenv
+pyarrow<19.0.0
+dbt-core
+dbt-snowflake
